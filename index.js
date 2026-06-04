@@ -3,7 +3,7 @@ const app = express();
 app.get('/', (req, res) => res.send('Sistema de Seguridad MetroBot Activo'));
 app.listen(process.env.PORT || 3000);
 
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // 1. REGISTRO DE COMANDOS
@@ -87,17 +87,7 @@ const commands = [
             option.setName('dni')
                 .setDescription('Número de identificación o DNI del propietario')
                 .setRequired(true)
-        ),
-
-    new SlashCommandBuilder()
-        .setName('buscar-vehiculo')
-        .setDescription('Consulta los datos de una matrícula en el sistema (Solo personal autorizado).')
-        .addStringOption(option =>
-            option.setName('matricula')
-                .setDescription('La matrícula o placa que deseas consultar')
-                .setRequired(true)
         )
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
 ].map(command => command.toJSON());
 
 // 2. CUANDO EL BOT SE CONECTA
@@ -182,7 +172,7 @@ client.on('interactionCreate', async interaction => {
     // Respuesta a /registrar-vehiculo
     if (interaction.commandName === 'registrar-vehiculo') {
         const modelo = interaction.options.getString('modelo').toUpperCase();
-        const matricula = interaction.options.getString('matricula').toUpperCase();
+        const matricula = interaction.options.getString('matricula').toUpperCase().trim();
         const color = interaction.options.getString('color').toUpperCase();
         const propietario = interaction.options.getString('propietario').toUpperCase();
         const dni = interaction.options.getString('dni');
@@ -201,44 +191,6 @@ client.on('interactionCreate', async interaction => {
             );
 
         await interaction.reply({ embeds: [embed] });
-    }
-
-    // Respuesta a /buscar-vehiculo (CON MÚLTIPLES ROLES AUTORIZADOS)
-    if (interaction.commandName === 'buscar-vehiculo') {
-        // Lista con las IDs de tus tres roles autorizados
-        const ROLES_AUTORIZADOS = [
-            '1510145980983545898',
-            '1510146060616470679',
-            '1510146659479195669'
-        ];
-
-        // Comprobamos si el usuario tiene AL MENOS UNO de los roles de la lista
-        const tienePermiso = interaction.member.roles.cache.some(role => ROLES_AUTORIZADOS.includes(role.id));
-
-        if (!tienePermiso) {
-            const embedError = new EmbedBuilder()
-                .setTitle('SISTEMA DE SEGURIDAD')
-                .setDescription('ACCESO DENEGADO — ERROR DE CREDENCIALES')
-                .setColor('#e74c3c')
-                .addFields({ name: 'RESTRICCION', value: 'NO CUENTAS CON LOS PERMISOS GUBERNAMENTALES REQUERIDOS PARA CONSULTAR LA BASE DE DATOS.' });
-            
-            return await interaction.reply({ embeds: [embedError], ephemeral: true });
-        }
-
-        const matricula = interaction.options.getString('matricula').toUpperCase();
-
-        const embedBusqueda = new EmbedBuilder()
-            .setTitle('DEPARTAMENTO DE VEHICULOS MOTORIZADOS')
-            .setDescription('CONSULTA DE TITULARIDAD Y REGISTRO AUTOMOTOR')
-            .setColor('#607d8b')
-            .addFields(
-                { name: 'MATRICULA CONSULTADA', value: `[${matricula}]` },
-                { name: 'ESTADO DE BUSQUEDA', value: 'CONEXION ESTABLECIDA CON LA CENTRAL' },
-                { name: 'RESULTADO', value: 'VEHICULO LOCALIZADO EN EL SISTEMA' },
-                { name: 'INFORMACION ADICIONAL', value: 'EL TITULAR DE LA PLACA DEBE DISPONER DE LA DOCUMENTACIÓN FÍSICA EN REGLA.' }
-            );
-
-        await interaction.reply({ embeds: [embedBusqueda] });
     }
 });
 
