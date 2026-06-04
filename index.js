@@ -41,6 +41,26 @@ const commands = [
             option.setName('placa')
                 .setDescription('Tu número de placa o identificación (Ej: 4015, 108)')
                 .setRequired(true)
+        ),
+
+    // Nuevo Comando /finalizar-patrullaje
+    new SlashCommandBuilder()
+        .setName('finalizar-patrullaje')
+        .setDescription('Anuncia que terminas tu servicio y sales de patrullaje.')
+        .addStringOption(option =>
+            option.setName('departamento')
+                .setDescription('¿De qué departamento te retiras? (Ej: LSPD, SAMD, SAFD)')
+                .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName('rango')
+                .setDescription('Tu rango actual (Ej: Oficial I, Paramédico, Capitán)')
+                .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName('placa')
+                .setDescription('Tu número de placa o identificación (Ej: 4015, 108)')
+                .setRequired(true)
         )
 ].map(command => command.toJSON());
 
@@ -83,6 +103,18 @@ client.on('interactionCreate', async interaction => {
 
         await interaction.reply({
             content: `🔵 **[${depto} - INICIO DE SERVICIO]** 🔵\n\n🪪 **Funcionario:** ${agente}\n⭐ **Rango:** ${rango}\n🔢 **Número de Placa:** [${placa}]\n\n*El miembro se encuentra disponible y en patrullaje. ¡Buen servicio!*`
+        });
+    }
+
+    // Respuesta a /finalizar-patrullaje
+    if (interaction.commandName === 'finalizar-patrullaje') {
+        const depto = interaction.options.getString('departamento').toUpperCase();
+        const rango = interaction.options.getString('rango');
+        const placa = interaction.options.getString('placa');
+        const agente = interaction.user; 
+
+        await interaction.reply({
+            content: `🔴 **[${depto} - FIN DE SERVICIO]** 🔴\n\n🪪 **Funcionario:** ${agente}\n⭐ **Rango:** ${rango}\n🔢 **Número de Placa:** [${placa}]\n\n*El miembro pasa a estar fuera de servicio (QTH). ¡Gracias por su labor!*`
         });
     }
 });
