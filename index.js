@@ -3,6 +3,7 @@ const app = express();
 app.get('/', (req, res) => res.send('Sistema de Seguridad MetroBot Activo'));
 app.listen(process.env.PORT || 3000);
 
+
 const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } = require('discord.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
