@@ -3,12 +3,12 @@ const app = express();
 app.get('/', (req, res) => res.send('Sistema de Seguridad MetroBot Activo'));
 app.listen(process.env.PORT || 3000);
 
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } = require('discord.js');
+// Importamos EmbedBuilder para crear los recuadros profesionales
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // 1. REGISTRO DE COMANDOS
 const commands = [
-    // Comando /entorno
     new SlashCommandBuilder()
         .setName('entorno')
         .setDescription('Describe una situación de entorno para el rol.')
@@ -23,18 +23,17 @@ const commands = [
                 .setRequired(true)
         ),
 
-    // Comando /iniciar-patrullaje
     new SlashCommandBuilder()
         .setName('iniciar-patrullaje')
         .setDescription('Anuncia que entras en servicio en un departamento.')
         .addStringOption(option =>
             option.setName('departamento')
-                .setDescription('¿A qué departamento entras? (Ej: LSPD, SAMD)')
+                .setDescription('¿A qué departamento entras? (Ej: LSPD, SAHP)')
                 .setRequired(true)
         )
         .addStringOption(option =>
             option.setName('rango')
-                .setDescription('Tu rango actual (Ej: Oficial I, Capitán)')
+                .setDescription('Tu rango actual (Ej: Officer I, Sergeant)')
                 .setRequired(true)
         )
         .addStringOption(option =>
@@ -43,13 +42,12 @@ const commands = [
                 .setRequired(true)
         ),
 
-    // Comando /finalizar-patrullaje
     new SlashCommandBuilder()
         .setName('finalizar-patrullaje')
         .setDescription('Anuncia que terminas tu servicio y sales de patrullaje.')
         .addStringOption(option =>
             option.setName('departamento')
-                .setDescription('¿De qué departamento te retiras? (Ej: LSPD, SAMD)')
+                .setDescription('¿De qué departamento te retiras? (Ej: LSPD, SAHP)')
                 .setRequired(true)
         )
         .addStringOption(option =>
@@ -63,23 +61,22 @@ const commands = [
                 .setRequired(true)
         ),
 
-    // Comando /registrar-vehiculo (ACTUALIZADO)
     new SlashCommandBuilder()
         .setName('registrar-vehiculo')
         .setDescription('Registra un vehículo en la base de datos de la ciudad.')
         .addStringOption(option =>
             option.setName('modelo')
-                .setDescription('Marca y modelo del auto (Ej: Benefactor Schafter)')
+                .setDescription('Marca y modelo del auto (Ej: Vapid Stanier)')
                 .setRequired(true)
         )
         .addStringOption(option =>
             option.setName('matricula')
-                .setDescription('La placa o matrícula del coche (Ej: LS-9921)')
+                .setDescription('La placa o matrícula del coche (Ej: 88ABC12)')
                 .setRequired(true)
         )
         .addStringOption(option =>
             option.setName('color')
-                .setDescription('Color o colores del vehículo (Ej: Negro Mate, Rojo)')
+                .setDescription('Color o colores del vehículo')
                 .setRequired(true)
         )
         .addStringOption(option =>
@@ -89,7 +86,7 @@ const commands = [
         )
         .addStringOption(option =>
             option.setName('dni')
-                .setDescription('Número de DNI o identificación del propietario')
+                .setDescription('Número de ID/SSN del propietario')
                 .setRequired(true)
         )
 ].map(command => command.toJSON());
@@ -110,7 +107,7 @@ client.once('ready', async () => {
     }
 });
 
-// 3. RESPUESTAS A LOS COMANDOS
+// 3. RESPUESTAS A LOS COMANDOS (FORMATO EMBED CLEAN)
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
@@ -118,44 +115,84 @@ client.on('interactionCreate', async interaction => {
     if (interaction.commandName === 'entorno') {
         const desc = interaction.options.getString('descripcion');
         const ubi = interaction.options.getString('ubicacion');
-        await interaction.reply({
-            content: `📢 **[ENTORNO DE ROL]** 📢\n\n📝 **Descripción:** ${desc}\n📍 **Ubicación:** ${ubi}\n\n⚠️ @everyone *• ¡Atención a la situación de entorno!*`
-        });
+
+        const embed = new EmbedBuilder()
+            .setTitle('ENVIRONMENT REPORT')
+            .setDescription('STATE OF SAN ANDREAS')
+            .setColor('#7289da') // Color azul clásico de Discord, puedes cambiarlo
+            .addFields(
+                { name: 'DESCRIPTION', value: desc },
+                { name: 'LOCATION', value: ubi }
+            );
+
+        // Enviamos el embed y además la mención fuera para que notifique a todos
+        await interaction.reply({ content: '@everyone', embeds: [embed] });
     }
 
     // Respuesta a /iniciar-patrullaje
     if (interaction.commandName === 'iniciar-patrullaje') {
         const depto = interaction.options.getString('departamento').toUpperCase();
-        const rango = interaction.options.getString('rango');
+        const rango = interaction.options.getString('rango').toUpperCase();
         const placa = interaction.options.getString('placa');
-        const agente = interaction.user; 
-        await interaction.reply({
-            content: `🔵 **[${depto} - INICIO DE SERVICIO]** 🔵\n\n🪪 **Funcionario:** ${agente}\n⭐ **Rango:** ${rango}\n🔢 **Número de Placa:** [${placa}]\n\n*El miembro se encuentra disponible y en patrullaje. ¡Buen servicio!*`
-        });
+        const agente = interaction.user.username.toUpperCase(); 
+
+        const embed = new EmbedBuilder()
+            .setTitle(`DEPARTMENT OF ${depto}`)
+            .setDescription('UNIT SIGN-ON / ON DUTY')
+            .setColor('#2ecc71') // Color Verde (Indica inicio/activo)
+            .addFields(
+                { name: 'OFFICER / AGENT', value: agente },
+                { name: 'RANK', value: rango },
+                { name: 'BADGE NUMBER', value: `[${placa}]` },
+                { name: 'STATUS', value: 'ACTIVE / AVAILABLE' }
+            );
+
+        await interaction.reply({ embeds: [embed] });
     }
 
     // Respuesta a /finalizar-patrullaje
     if (interaction.commandName === 'finalizar-patrullaje') {
         const depto = interaction.options.getString('departamento').toUpperCase();
-        const rango = interaction.options.getString('rango');
+        const rango = interaction.options.getString('rango').toUpperCase();
         const placa = interaction.options.getString('placa');
-        const agente = interaction.user; 
-        await interaction.reply({
-            content: `🔴 **[${depto} - FIN DE SERVICIO]** 🔴\n\n🪪 **Funcionario:** ${agente}\n⭐ **Rango:** ${rango}\n🔢 **Número de Placa:** [${placa}]\n\n*El miembro pasa a estar fuera de servicio (QTH). ¡Gracias por su labor!*`
-        });
+        const agente = interaction.user.username.toUpperCase(); 
+
+        const embed = new EmbedBuilder()
+            .setTitle(`DEPARTMENT OF ${depto}`)
+            .setDescription('UNIT SIGN-OFF / OFF DUTY')
+            .setColor('#e74c3c') // Color Rojo (Indica fin/inactivo)
+            .addFields(
+                { name: 'OFFICER / AGENT', value: agente },
+                { name: 'RANK', value: rango },
+                { name: 'BADGE NUMBER', value: `[${placa}]` },
+                { name: 'STATUS', value: '10-7 / OUT OF SERVICE' }
+            );
+
+        await interaction.reply({ embeds: [embed] });
     }
 
-    // Respuesta a /registrar-vehiculo (ACTUALIZADA)
+    // Respuesta a /registrar-vehiculo
     if (interaction.commandName === 'registrar-vehiculo') {
-        const modelo = interaction.options.getString('modelo');
+        const modelo = interaction.options.getString('modelo').toUpperCase();
         const matricula = interaction.options.getString('matricula').toUpperCase();
-        const color = interaction.options.getString('color');
-        const propietario = interaction.options.getString('propietario');
+        const color = interaction.options.getString('color').toUpperCase();
+        const propietario = interaction.options.getString('propietario').toUpperCase();
         const dni = interaction.options.getString('dni');
 
-        await interaction.reply({
-            content: `🚘 **[REGISTRO VEHICULAR DGT]** 🚘\n\n📋 **Modelo:** ${modelo}\n🎨 **Color:** ${color}\n🔢 **Matrícula / Placa:** [${matricula}]\n\n👤 **Propietario:** ${propietario}\n🪪 **DNI:** ${dni}\n\n*Vehículo registrado exitosamente en la base de datos nacional.*`
-        });
+        const embed = new EmbedBuilder()
+            .setTitle('DEPARTMENT OF MOTOR VEHICLES')
+            .setDescription('STATE OF SAN ANDREAS — VEHICLE REGISTRATION')
+            .setColor('#34495e') // Color gris oscuro institucional
+            .addFields(
+                { name: 'VEHICLE MODEL', value: modelo },
+                { name: 'COLOR', value: color },
+                { name: 'LICENSE PLATE', value: `[${matricula}]` },
+                { name: 'OWNER NAME', value: propietario },
+                { name: 'IDENTIFICATION NUMBER (ID/SSN)', value: `[${dni}]` },
+                { name: 'RECORD STATUS', value: 'VALID / REGISTERED' }
+            );
+
+        await interaction.reply({ embeds: [embed] });
     }
 });
 
