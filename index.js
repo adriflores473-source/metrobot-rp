@@ -78,10 +78,9 @@ const commands = [
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
-    // 👇 COMANDO TOTALMENTE PÚBLICO (No requiere permisos de administrador)
     new SlashCommandBuilder()
         .setName('anonimo')
-        .setDescription('Envía un mensaje anónimo con estilo Odyssey Bot (Público para todos).')
+        .setDescription('Envía un mensaje anónimo con estilo Odyssey Bot.')
 ].map(command => command.toJSON());
 
 // 2. CUANDO EL BOT SE CONECTA
@@ -100,15 +99,13 @@ client.once('ready', async () => {
     }
 });
 
-// 3. RESPUESTAS A LOS COMANDOS Y FORMULARIOS
+// 3. RESPUESTAS A INTERACCIONES (COMANDOS Y FORMULARIOS)
 client.on('interactionCreate', async interaction => {
-    // Tu ID de seguridad exclusiva para comandos administrativos
     const MI_ID_DE_USUARIO = '1286812839465717772';
 
-    // Manejar el Comando de Barra
+    // A. SI ES UN COMANDO DE BARRA
     if (interaction.isChatInputCommand()) {
         
-        // Respuesta a /entorno
         if (interaction.commandName === 'entorno') {
             const desc = interaction.options.getString('descripcion');
             const ubi = interaction.options.getString('ubicacion');
@@ -122,4 +119,102 @@ client.on('interactionCreate', async interaction => {
                     { name: 'UBICACION', value: ubi }
                 );
 
-            await interaction.reply({ content: '@everyone',
+            await interaction.reply({ content: '@everyone', embeds: [embed] });
+        }
+
+        if (interaction.commandName === 'registrar-vehiculo') {
+            const modelo = interaction.options.getString('modelo').toUpperCase();
+            const matricula = interaction.options.getString('matricula').toUpperCase().trim();
+            const color = interaction.options.getString('color').toUpperCase();
+            const propietario = interaction.options.getString('propietario').toUpperCase();
+            const dni = interaction.options.getString('dni');
+
+            const embed = new EmbedBuilder()
+                .setTitle('DEPARTAMENTO DE VEHICULOS MOTORIZADOS')
+                .setDescription('REGISTRO OFICIAL DE VEHICULOS')
+                .setColor('#34495e')
+                .addFields(
+                    { name: 'MODELO DEL VEHICULO', value: modelo },
+                    { name: 'COLOR', value: color },
+                    { name: 'MATRICULA / PLACA', value: `[${matricula}]` },
+                    { name: 'NOMBRE DEL PROPIETARIO', value: propietario },
+                    { name: 'NUMERO DE IDENTIFICACION (DNI)', value: `[${dni}]` },
+                    { name: 'ESTADO DEL REGISTRO', value: 'VALIDO / REGISTRADO' }
+                );
+
+            await interaction.reply({ embeds: [embed] });
+        }
+
+        if (interaction.commandName === 'decir') {
+            if (interaction.user.id !== MI_ID_DE_USUARIO) {
+                const embedError = new EmbedBuilder()
+                    .setTitle('SISTEMA DE SEGURIDAD')
+                    .setDescription('ACCESO DENEGADO — CODIGO DE ERROR 403')
+                    .setColor('#e74c3c')
+                    .addFields({ name: 'RESTRICCION', value: 'ESTE COMANDO ES EXCLUSIVO DEL FUNDADOR PRINCIPAL.' });
+                
+                return await interaction.reply({ embeds: [embedError], ephemeral: true });
+            }
+
+            const mensajeTexto = interaction.options.getString('mensaje');
+
+            const embedAnuncio = new EmbedBuilder()
+                .setTitle('ANUNCIO DE LA ADMINISTRACION')
+                .setDescription('COMUNIDAD DE LOS ANGELES')
+                .setColor('#2c3e50')
+                .addFields({ name: 'CONTENIDO', value: mensajeTexto });
+
+            await interaction.channel.send({ embeds: [embedAnuncio] });
+            await interaction.reply({ content: 'Transmisión completada de manera exitosa.', ephemeral: true });
+        }
+
+        if (interaction.commandName === 'anonimo') {
+            try {
+                const modal = new ModalBuilder()
+                    .setCustomId('formulario_anonimo')
+                    .setTitle('Usuario de la web');
+
+                const mensajeInput = new TextInputBuilder()
+                    .setCustomId('contenido_anonimo')
+                    .setLabel('Escribe tu mensaje secreto aquí')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setRequired(true)
+                    .setPlaceholder('Escribe el texto que procesará el sistema...');
+
+                const filaAccion = new ActionRowBuilder().addComponents(mensajeInput);
+                modal.addComponents(filaAccion);
+
+                await interaction.showModal(modal);
+            } catch (err) {
+                console.error('Error mostrando el modal:', err);
+            }
+        }
+    }
+
+    // B. SI ENVIARON UN FORMULARIO (MODAL)
+    if (interaction.isModalSubmit()) {
+        if (interaction.customId === 'formulario_anonimo') {
+            try {
+                const textoMensaje = interaction.fields.getTextInputValue('contenido_anonimo');
+
+                const embedOdysseyStyle = new EmbedBuilder()
+                    .setAuthor({ name: 'Usuario de la web' })
+                    .setTitle('Mensaje con autor anónimo')
+                    .setDescription(textoMensaje)
+                    .setColor('#111111') 
+                    .setThumbnail('https://i.imgur.com/vK28Q8D.png') 
+                    .setFooter({ text: 'MetroBot For Roleplay' })
+                    .setTimestamp(); // Esto pone la hora actual exacta automáticamente estilo Odyssey
+
+                await interaction.channel.send({ embeds: [embedOdysseyStyle] });
+
+                // Respondemos de inmediato para que Discord no piense que el bot se colgó
+                await interaction.reply({ content: '🤫 Tu mensaje ha sido enviado de forma anónima.', ephemeral: true });
+            } catch (err) {
+                console.error('Error procesando el modal:', err);
+            }
+        }
+    }
+});
+
+client.login(process.env.DISCORD_TOKEN);
