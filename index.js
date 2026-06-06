@@ -3,7 +3,7 @@ const app = express();
 app.get('/', (req, res) => res.send('Sistema de Seguridad MetroBot Activo'));
 app.listen(process.env.PORT || 3000);
 
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // 1. REGISTRO DE COMANDOS
@@ -19,44 +19,6 @@ const commands = [
         .addStringOption(option =>
             option.setName('ubicacion')
                 .setDescription('¿En qué parte de la ciudad estás?')
-                .setRequired(true)
-        ),
-
-    new SlashCommandBuilder()
-        .setName('iniciar-patrullaje')
-        .setDescription('Anuncia que entras en servicio en un departamento.')
-        .addStringOption(option =>
-            option.setName('departamento')
-                .setDescription('¿A qué departamento entras? (Ej: LSPD, Sheriff)')
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option.setName('rango')
-                .setDescription('Tu rango actual (Ej: Oficial I, Sargento)')
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option.setName('placa')
-                .setDescription('Tu número de placa o identificación')
-                .setRequired(true)
-        ),
-
-    new SlashCommandBuilder()
-        .setName('finalizar-patrullaje')
-        .setDescription('Anuncia que terminas tu servicio y sales de patrullaje.')
-        .addStringOption(option =>
-            option.setName('departamento')
-                .setDescription('¿De qué departamento te retiras? (Ej: LSPD, Sheriff)')
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option.setName('rango')
-                .setDescription('Tu rango actual')
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option.setName('placa')
-                .setDescription('Tu número de placa o identificación')
                 .setRequired(true)
         ),
 
@@ -87,7 +49,17 @@ const commands = [
             option.setName('dni')
                 .setDescription('Número de identificación o DNI del propietario')
                 .setRequired(true)
+        ),
+
+    new SlashCommandBuilder()
+        .setName('decir')
+        .setDescription('Envía un comunicado oficial a través del bot (Solo Personal Autorizado).')
+        .addStringOption(option =>
+            option.setName('mensaje')
+                .setDescription('Escribe el texto que el bot va a decir')
+                .setRequired(true)
         )
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
 ].map(command => command.toJSON());
 
 // 2. CUANDO EL BOT SE CONECTA
@@ -127,48 +99,6 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({ content: '@everyone', embeds: [embed] });
     }
 
-    // Respuesta a /iniciar-patrullaje
-    if (interaction.commandName === 'iniciar-patrullaje') {
-        const depto = interaction.options.getString('departamento').toUpperCase();
-        const rango = interaction.options.getString('rango').toUpperCase();
-        const placa = interaction.options.getString('placa');
-        const agente = interaction.user.username.toUpperCase(); 
-
-        const embed = new EmbedBuilder()
-            .setTitle(`DEPARTAMENTO DE ${depto}`)
-            .setDescription('INGRESO A SERVICIO / EN PATRULLA')
-            .setColor('#2ecc71')
-            .addFields(
-                { name: 'OFICIAL / AGENTE', value: agente },
-                { name: 'RANGO', value: rango },
-                { name: 'NUMERO DE PLACA', value: `[${placa}]` },
-                { name: 'ESTADO', value: 'ACTIVO / DISPONIBLE' }
-            );
-
-        await interaction.reply({ embeds: [embed] });
-    }
-
-    // Respuesta a /finalizar-patrullaje
-    if (interaction.commandName === 'finalizar-patrullaje') {
-        const depto = interaction.options.getString('departamento').toUpperCase();
-        const rango = interaction.options.getString('rango').toUpperCase();
-        const placa = interaction.options.getString('placa');
-        const agente = interaction.user.username.toUpperCase(); 
-
-        const embed = new EmbedBuilder()
-            .setTitle(`DEPARTAMENTO DE ${depto}`)
-            .setDescription('RETIRO DE SERVICIO / FUERA DE PATRULLA')
-            .setColor('#e74c3c')
-            .addFields(
-                { name: 'OFICIAL / AGENTE', value: agente },
-                { name: 'RANGO', value: rango },
-                { name: 'NUMERO DE PLACA', value: `[${placa}]` },
-                { name: 'ESTADO', value: '10-7 / FUERA DE SERVICIO' }
-            );
-
-        await interaction.reply({ embeds: [embed] });
-    }
-
     // Respuesta a /registrar-vehiculo
     if (interaction.commandName === 'registrar-vehiculo') {
         const modelo = interaction.options.getString('modelo').toUpperCase();
@@ -191,6 +121,35 @@ client.on('interactionCreate', async interaction => {
             );
 
         await interaction.reply({ embeds: [embed] });
+    }
+
+    // Respuesta a /decir (SISTEMA DE RETRANSMISIÓN ACTUALIZADO)
+    if (interaction.commandName === 'decir') {
+        // Tu nueva ID de rol exclusiva
+        const ROL_EXCLUSIVO = '1510139197493739721';
+
+        // Bloqueo de seguridad por rol
+        if (!interaction.member.roles.cache.has(ROL_EXCLUSIVO)) {
+            const embedError = new EmbedBuilder()
+                .setTitle('SISTEMA DE SEGURIDAD')
+                .setDescription('ACCESO DENEGADO — CODIGO DE ERROR 403')
+                .setColor('#e74c3c')
+                .addFields({ name: 'RESTRICCION', value: 'NO TIENES AUTORIZACIÓN PARA TRANSMITIR MENSAJES CON ESTA IDENTIDAD DE RECOLECCIÓN DE DATOS.' });
+            
+            return await interaction.reply({ embeds: [embedError], ephemeral: true });
+        }
+
+        const mensajeTexto = interaction.options.getString('mensaje');
+
+        const embedAnuncio = new EmbedBuilder()
+            .setTitle('COMUNICADO OFICIAL')
+            .setDescription('SISTEMA DE INFORMACIÓN AUTOMATIZADO')
+            .setColor('#2c3e50')
+            .addFields({ name: 'MENSAJE DE LA CENTRAL', value: mensajeTexto });
+
+        await interaction.channel.send({ embeds: [embedAnuncio] });
+
+        await interaction.reply({ content: 'Transmisión completada de manera exitosa.', ephemeral: true });
     }
 });
 
