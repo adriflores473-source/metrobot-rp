@@ -123,29 +123,29 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({ embeds: [embed] });
     }
 
-    // Respuesta a /decir (SISTEMA DE RETRANSMISIÓN ACTUALIZADO)
+    // Respuesta a /decir (ESTILO CORPORATIVO GENERAL Y LIMPIO)
     if (interaction.commandName === 'decir') {
-        // Tu nueva ID de rol exclusiva
         const ROL_EXCLUSIVO = '1510139197493739721';
 
-        // Bloqueo de seguridad por rol
+        // Bloqueo estricto por rol
         if (!interaction.member.roles.cache.has(ROL_EXCLUSIVO)) {
             const embedError = new EmbedBuilder()
                 .setTitle('SISTEMA DE SEGURIDAD')
                 .setDescription('ACCESO DENEGADO — CODIGO DE ERROR 403')
                 .setColor('#e74c3c')
-                .addFields({ name: 'RESTRICCION', value: 'NO TIENES AUTORIZACIÓN PARA TRANSMITIR MENSAJES CON ESTA IDENTIDAD DE RECOLECCIÓN DE DATOS.' });
+                .addFields({ name: 'RESTRICCION', value: 'NO TIENES AUTORIZACIÓN PARA TRANSMITIR MENSAJES CON ESTA IDENTIDAD.' });
             
             return await interaction.reply({ embeds: [embedError], ephemeral: true });
         }
 
         const mensajeTexto = interaction.options.getString('mensaje');
 
+        // Rediseño completo sin textos de policía o centralita
         const embedAnuncio = new EmbedBuilder()
-            .setTitle('COMUNICADO OFICIAL')
-            .setDescription('SISTEMA DE INFORMACIÓN AUTOMATIZADO')
-            .setColor('#2c3e50')
-            .addFields({ name: 'MENSAJE DE LA CENTRAL', value: mensajeTexto });
+            .setTitle('ANUNCIO DE LA ADMINISTRACION')
+            .setDescription('COMUNIDAD DE LOS ANGELES')
+            .setColor('#2c3e50') // Gris azulado corporativo impecable
+            .addFields({ name: 'CONTENIDO', value: mensajeTexto });
 
         await interaction.channel.send({ embeds: [embedAnuncio] });
 
