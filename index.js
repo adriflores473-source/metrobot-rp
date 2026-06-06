@@ -3,7 +3,19 @@ const app = express();
 app.get('/', (req, res) => res.send('Sistema de Seguridad MetroBot Activo'));
 app.listen(process.env.PORT || 3000);
 
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { 
+    Client, 
+    GatewayIntentBits, 
+    REST, 
+    Routes, 
+    SlashCommandBuilder, 
+    EmbedBuilder, 
+    PermissionFlagsBits,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+    ActionRowBuilder
+} = require('discord.js');
 
 const client = new Client({ 
     intents: [
@@ -66,15 +78,10 @@ const commands = [
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
+    // 👇 COMANDO TOTALMENTE PÚBLICO (No requiere permisos de administrador)
     new SlashCommandBuilder()
         .setName('anonimo')
-        .setDescription('Envía un mensaje a través del bot sin revelar quién lo mandó (Solo Marcos).')
-        .addStringOption(option =>
-            option.setName('mensaje')
-                .setDescription('Escribe el texto oculto')
-                .setRequired(true)
-        )
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
+        .setDescription('Envía un mensaje anónimo con estilo Odyssey Bot (Público para todos).')
 ].map(command => command.toJSON());
 
 // 2. CUANDO EL BOT SE CONECTA
@@ -93,102 +100,26 @@ client.once('ready', async () => {
     }
 });
 
-// 3. RESPUESTAS A LOS COMANDOS
+// 3. RESPUESTAS A LOS COMANDOS Y FORMULARIOS
 client.on('interactionCreate', async interaction => {
-    if (!interaction.isChatInputCommand()) return;
-
-    // Tu ID de seguridad (Marcos)
+    // Tu ID de seguridad exclusiva para comandos administrativos
     const MI_ID_DE_USUARIO = '1286812839465717772';
 
-    // Respuesta a /entorno
-    if (interaction.commandName === 'entorno') {
-        const desc = interaction.options.getString('descripcion');
-        const ubi = interaction.options.getString('ubicacion');
+    // Manejar el Comando de Barra
+    if (interaction.isChatInputCommand()) {
+        
+        // Respuesta a /entorno
+        if (interaction.commandName === 'entorno') {
+            const desc = interaction.options.getString('descripcion');
+            const ubi = interaction.options.getString('ubicacion');
 
-        const embed = new EmbedBuilder()
-            .setTitle('REPORTE DE ENTORNO')
-            .setDescription('DEPARTAMENTO DE SEGURIDAD')
-            .setColor('#7289da')
-            .addFields(
-                { name: 'DESCRIPCION', value: desc },
-                { name: 'UBICACION', value: ubi }
-            );
+            const embed = new EmbedBuilder()
+                .setTitle('REPORTE DE ENTORNO')
+                .setDescription('DEPARTAMENTO DE SEGURIDAD')
+                .setColor('#7289da')
+                .addFields(
+                    { name: 'DESCRIPCION', value: desc },
+                    { name: 'UBICACION', value: ubi }
+                );
 
-        await interaction.reply({ content: '@everyone', embeds: [embed] });
-    }
-
-    // Respuesta a /registrar-vehiculo
-    if (interaction.commandName === 'registrar-vehiculo') {
-        const modelo = interaction.options.getString('modelo').toUpperCase();
-        const matricula = interaction.options.getString('matricula').toUpperCase().trim();
-        const color = interaction.options.getString('color').toUpperCase();
-        const propietario = interaction.options.getString('propietario').toUpperCase();
-        const dni = interaction.options.getString('dni');
-
-        const embed = new EmbedBuilder()
-            .setTitle('DEPARTAMENTO DE VEHICULOS MOTORIZADOS')
-            .setDescription('REGISTRO OFICIAL DE VEHICULOS')
-            .setColor('#34495e')
-            .addFields(
-                { name: 'MODELO DEL VEHICULO', value: modelo },
-                { name: 'COLOR', value: color },
-                { name: 'MATRICULA / PLACA', value: `[${matricula}]` },
-                { name: 'NOMBRE DEL PROPIETARIO', value: propietario },
-                { name: 'NUMERO DE IDENTIFICACION (DNI)', value: `[${dni}]` },
-                { name: 'ESTADO DEL REGISTRO', value: 'VALIDO / REGISTRADO' }
-            );
-
-        await interaction.reply({ embeds: [embed] });
-    }
-
-    // Respuesta a /decir
-    if (interaction.commandName === 'decir') {
-        if (interaction.user.id !== MI_ID_DE_USUARIO) {
-            const embedError = new EmbedBuilder()
-                .setTitle('SISTEMA DE SEGURIDAD')
-                .setDescription('ACCESO DENEGADO — CODIGO DE ERROR 403')
-                .setColor('#e74c3c')
-                .addFields({ name: 'RESTRICCION', value: 'ESTE COMANDO ES EXCLUSIVO DEL FUNDADOR PRINCIPAL Y NO PUEDE SER EJECUTADO POR OTRA CUENTA.' });
-            
-            return await interaction.reply({ embeds: [embedError], ephemeral: true });
-        }
-
-        const mensajeTexto = interaction.options.getString('mensaje');
-
-        const embedAnuncio = new EmbedBuilder()
-            .setTitle('ANUNCIO DE LA ADMINISTRACION')
-            .setDescription('COMUNIDAD DE LOS ANGELES')
-            .setColor('#2c3e50')
-            .addFields({ name: 'CONTENIDO', value: mensajeTexto });
-
-        await interaction.channel.send({ embeds: [embedAnuncio] });
-        await interaction.reply({ content: 'Transmisión completada de manera exitosa.', ephemeral: true });
-    }
-
-    // Respuesta a /anonimo
-    if (interaction.commandName === 'anonimo') {
-        if (interaction.user.id !== MI_ID_DE_USUARIO) {
-            const embedError = new EmbedBuilder()
-                .setTitle('SISTEMA DE SEGURIDAD')
-                .setDescription('ACCESO DENEGADO — CODIGO DE ERROR 403')
-                .setColor('#e74c3c')
-                .addFields({ name: 'RESTRICCION', value: 'ESTE COMANDO ES EXCLUSIVO DEL FUNDADOR PRINCIPAL Y NO PUEDE SER EJECUTADO POR OTRA CUENTA.' });
-            
-            return await interaction.reply({ embeds: [embedError], ephemeral: true });
-        }
-
-        const mensajeOculto = interaction.options.getString('mensaje');
-
-        const embedOculto = new EmbedBuilder()
-            .setTitle('TRANSMISIÓN ENCRIPTADA')
-            .setDescription('⚙️ COMUNICADO DEL SISTEMA PRINCIPAL')
-            .setColor('#1abc9c')
-            .addFields({ name: 'MENSAJE RECIBIDO', value: mensajeOculto })
-            .setTimestamp();
-
-        await interaction.channel.send({ embeds: [embedOculto] });
-        await interaction.reply({ content: '🕵️‍♂️ Tu mensaje anónimo ha sido enviado correctamente. Nadie sabrá quién lo puso.', ephemeral: true });
-    }
-});
-
-client.login(process.env.DISCORD_TOKEN);
+            await interaction.reply({ content: '@everyone',
