@@ -4,12 +4,10 @@ app.get('/', (req, res) => res.send('Sistema de Seguridad MetroBot Activo'));
 app.listen(process.env.PORT || 3000);
 
 const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const { joinVoiceChannel, VoiceConnectionStatus } = require('@discordjs/voice');
 
 const client = new Client({ 
     intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildVoiceStates
+        GatewayIntentBits.Guilds
     ] 
 });
 
@@ -69,35 +67,9 @@ const commands = [
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
 ].map(command => command.toJSON());
 
-// CONEXIÓN AUTOMÁTICA 24/7 AL CANAL DE VOZ
-function conectarCanalVoz() {
-    // Recuerda cambiar esta ID por la de tu canal de voz si vas a usar esta función
-    const ID_CANAL_VOZ = 'TU_ID_DE_CANAL_DE_VOZ'; 
-    
-    const canal = client.channels.cache.get(ID_CANAL_VOZ);
-    if (!canal) return console.log('❌ No se encontró el canal de voz. Verifica la ID.');
-
-    console.log(`🎙️ Intentando conectar al canal de voz: ${canal.name}`);
-
-    const connection = joinVoiceChannel({
-        channelId: canal.id,
-        guildId: canal.guild.id,
-        adapterCreator: canal.guild.voiceAdapterCreator,
-        selfMute: true,
-        selfDeaf: true  
-    });
-
-    connection.on(VoiceConnectionStatus.Disconnected, () => {
-        console.log('⚠️ El bot se desconectó del canal de voz. Reconectando...');
-        setTimeout(() => conectarCanalVoz(), 5000);
-    });
-}
-
 // 2. CUANDO EL BOT SE CONECTA
 client.once('ready', async () => {
     console.log(`🤖 ¡MetroBot en línea y listo para el rol!`);
-    
-    conectarCanalVoz();
 
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     try {
@@ -115,7 +87,7 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    // Respuesta a /entorno (PÚBLICO)
+    // Respuesta a /entorno
     if (interaction.commandName === 'entorno') {
         const desc = interaction.options.getString('descripcion');
         const ubi = interaction.options.getString('ubicacion');
@@ -132,7 +104,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({ content: '@everyone', embeds: [embed] });
     }
 
-    // Respuesta a /registrar-vehiculo (PÚBLICO)
+    // Respuesta a /registrar-vehiculo
     if (interaction.commandName === 'registrar-vehiculo') {
         const modelo = interaction.options.getString('modelo').toUpperCase();
         const matricula = interaction.options.getString('matricula').toUpperCase().trim();
@@ -146,4 +118,41 @@ client.on('interactionCreate', async interaction => {
             .setColor('#34495e')
             .addFields(
                 { name: 'MODELO DEL VEHICULO', value: modelo },
-                { name: '
+                { name: 'COLOR', value: color },
+                { name: 'MATRICULA / PLACA', value: `[${matricula}]` },
+                { name: 'NOMBRE DEL PROPIETARIO', value: propietario },
+                { name: 'NUMERO DE IDENTIFICACION (DNI)', value: `[${dni}]` },
+                { name: 'ESTADO DEL REGISTRO', value: 'VALIDO / REGISTRADO' }
+            );
+
+        await interaction.reply({ embeds: [embed] });
+    }
+
+    // Respuesta a /decir (BLOQUEADO ESTRICTAMENTE PARA MARCOS)
+    if (interaction.commandName === 'decir') {
+        const MI_ID_DE_USUARIO = '1286812839465717772';
+
+        if (interaction.user.id !== MI_ID_DE_USUARIO) {
+            const embedError = new EmbedBuilder()
+                .setTitle('SISTEMA DE SEGURIDAD')
+                .setDescription('ACCESO DENEGADO — CODIGO DE ERROR 403')
+                .setColor('#e74c3c')
+                .addFields({ name: 'RESTRICCION', value: 'ESTE COMANDO ES EXCLUSIVO DEL FUNDADOR PRINCIPAL Y NO PUEDE SER EJECUTADO POR OTRA CUENTA.' });
+            
+            return await interaction.reply({ embeds: [embedError], ephemeral: true });
+        }
+
+        const mensajeTexto = interaction.options.getString('mensaje');
+
+        const embedAnuncio = new EmbedBuilder()
+            .setTitle('ANUNCIO DE LA ADMINISTRACION')
+            .setDescription('COMUNIDAD DE LOS ANGELES')
+            .setColor('#2c3e50')
+            .addFields({ name: 'CONTENIDO', value: mensajeTexto });
+
+        await interaction.channel.send({ embeds: [embedAnuncio] });
+        await interaction.reply({ content: 'Transmisión completada de manera exitosa.', ephemeral: true });
+    }
+});
+
+client.login(process.env.DISCORD_TOKEN);
