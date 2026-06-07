@@ -79,11 +79,10 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.isChatInputCommand()) {
         
-        // COMANDO: /codigo-servidor
+        // COMANDO: /codigo-servidor (AHORA PÚBLICO)
         if (interaction.commandName === 'codigo-servidor') {
             return await interaction.reply({ 
-                content: '🌴 **Información de Conexión**\n\nEl código oficial para ingresar a **Los Angeles Roleplay Spanish** es:\n\n🔑 `LArpsp`\n\n¡Úsalo con cuidado en la ciudad! 🏙️',
-                ephemeral: true 
+                content: '🌴 **Información de Conexión**\n\nEl código oficial para ingresar a **Los Angeles Roleplay Spanish** es:\n\n🔑 `LArpsp`\n\n¡Úsalo con cuidado en la ciudad! 🏙️'
             });
         }
 
