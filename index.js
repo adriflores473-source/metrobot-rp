@@ -23,7 +23,7 @@ const client = new Client({
     ] 
 });
 
-// 1. REGISTRO DE COMANDOS CORREGIDO
+// 1. REGISTRO DE COMANDOS
 const commands = [
     new SlashCommandBuilder()
         .setName('entorno')
@@ -42,74 +42,54 @@ const commands = [
     new SlashCommandBuilder()
         .setName('registrar-vehiculo')
         .setDescription('Registra un vehículo en la base de datos de la ciudad.')
-        .addStringOption(option =>
-            option.setName('modelo')
-                .setDescription('Marca y modelo del auto (Ej: Ford Crown Victoria)')
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option.setName('matricula')
-                .setDescription('La placa o matrícula del coche')
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option.setName('color')
-                .setDescription('Color o colores del vehículo')
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option.setName('propietario')
-                .setDescription('Nombre y Apellido del dueño del vehículo')
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option.setName('dni')
-                .setDescription('Número de identificación o DNI del propietario')
-                .setRequired(true)
-        ),
+        .addStringOption(option => option.setName('modelo').setDescription('Marca y modelo').setRequired(true))
+        .addStringOption(option => option.setName('matricula').setDescription('La placa').setRequired(true))
+        .addStringOption(option => option.setName('color').setDescription('Color').setRequired(true))
+        .addStringOption(option => option.setName('propietario').setDescription('Nombre y Apellido').setRequired(true))
+        .addStringOption(option => option.setName('dni').setDescription('Número de DNI').setRequired(true)),
 
     new SlashCommandBuilder()
         .setName('decir')
-        .setDescription('Envía un comunicado oficial a través del bot (Solo Fundador Principal).')
-        .addStringOption(option =>
-            option.setName('mensaje')
-                .setDescription('Escribe el texto que el bot va a decir')
-                .setRequired(true)
-        )
+        .setDescription('Envía un comunicado oficial.')
+        .addStringOption(option => option.setName('mensaje').setDescription('Texto a enviar').setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
     new SlashCommandBuilder()
         .setName('anonimo')
-        .setDescription('Envía un mensaje anónimo con estilo Odyssey Bot.')
+        .setDescription('Envía un mensaje anónimo con estilo Odyssey Bot.'),
+
+    new SlashCommandBuilder()
+        .setName('codigo-servidor')
+        .setDescription('Obtén el código oficial del servidor LArpsp')
 ].map(command => command.toJSON());
 
 // 2. CONEXIÓN DEL BOT
 client.once('ready', async () => {
     console.log(`🤖 ¡MetroBot en línea y listo para el rol!`);
-
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     try {
-        await rest.put(
-            Routes.applicationCommands(client.user.id),
-            { body: commands },
-        );
-        console.log('🚨 Comandos actualizados con éxito en Discord.');
-    } catch (error) {
-        console.error('Error registrando comandos:', error);
-    }
+        await rest.put(Routes.applicationCommands(client.user.id), { body: commands });
+        console.log('🚨 Comandos actualizados con éxito.');
+    } catch (error) { console.error('Error registrando comandos:', error); }
 });
 
 // 3. RESPUESTAS A INTERACCIONES
 client.on('interactionCreate', async interaction => {
     const MI_ID_DE_USUARIO = '1286812839465717772';
 
-    // A. COMANDOS DE BARRA
     if (interaction.isChatInputCommand()) {
         
+        // COMANDO: /codigo-servidor
+        if (interaction.commandName === 'codigo-servidor') {
+            return await interaction.reply({ 
+                content: '🌴 **Información de Conexión**\n\nEl código oficial para ingresar a **Los Angeles Roleplay Spanish** es:\n\n🔑 `LArpsp`\n\n¡Úsalo con cuidado en la ciudad! 🏙️',
+                ephemeral: true 
+            });
+        }
+
         if (interaction.commandName === 'entorno') {
             const desc = interaction.options.getString('descripcion');
             const ubi = interaction.options.getString('ubicacion');
-
             const embed = new EmbedBuilder()
                 .setTitle('REPORTE DE ENTORNO')
                 .setDescription('DEPARTAMENTO DE SEGURIDAD')
@@ -118,7 +98,6 @@ client.on('interactionCreate', async interaction => {
                     { name: 'DESCRIPCION', value: desc },
                     { name: 'UBICACION', value: ubi }
                 );
-
             return await interaction.reply({ content: '@everyone', embeds: [embed] });
         }
 
@@ -128,7 +107,6 @@ client.on('interactionCreate', async interaction => {
             const color = interaction.options.getString('color').toUpperCase();
             const propietario = interaction.options.getString('propietario').toUpperCase();
             const dni = interaction.options.getString('dni');
-
             const embed = new EmbedBuilder()
                 .setTitle('DEPARTAMENTO DE VEHICULOS MOTORIZADOS')
                 .setDescription('REGISTRO OFICIAL DE VEHICULOS')
@@ -141,101 +119,44 @@ client.on('interactionCreate', async interaction => {
                     { name: 'NUMERO DE IDENTIFICACION (DNI)', value: `[${dni}]` },
                     { name: 'ESTADO DEL REGISTRO', value: 'VALIDO / REGISTRADO' }
                 );
-
             return await interaction.reply({ embeds: [embed] });
         }
 
         if (interaction.commandName === 'decir') {
             if (interaction.user.id !== MI_ID_DE_USUARIO) {
-                const embedError = new EmbedBuilder()
-                    .setTitle('SISTEMA DE SEGURIDAD')
-                    .setDescription('ACCESO DENEGADO — CODIGO DE ERROR 403')
-                    .setColor('#e74c3c')
-                    .addFields({ name: 'RESTRICCION', value: 'ESTE COMANDO ES EXCLUSIVO DEL FUNDADOR PRINCIPAL.' });
-                
-                return await interaction.reply({ embeds: [embedError], ephemeral: true });
+                return await interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
             }
-
             const mensajeTexto = interaction.options.getString('mensaje');
-
             const embedAnuncio = new EmbedBuilder()
                 .setTitle('ANUNCIO DE LA ADMINISTRACION')
-                .setDescription('COMUNIDAD DE LOS ANGELES')
-                .setColor('#2c3e50')
-                .addFields({ name: 'CONTENIDO', value: mensajeTexto });
-
+                .setDescription(mensajeTexto)
+                .setColor('#2c3e50');
             await interaction.channel.send({ embeds: [embedAnuncio] });
-            return await interaction.reply({ content: 'Transmisión completada de manera exitosa.', ephemeral: true });
+            return await interaction.reply({ content: 'Enviado.', ephemeral: true });
         }
 
         if (interaction.commandName === 'anonimo') {
-            try {
-                const modal = new ModalBuilder()
-                    .setCustomId('formulario_anonimo')
-                    .setTitle('Usuario de la web');
-
-                const mensajeInput = new TextInputBuilder()
-                    .setCustomId('contenido_anonimo')
-                    .setLabel('Escribe tu mensaje secreto aquí')
-                    .setStyle(TextInputStyle.Paragraph)
-                    .setRequired(true)
-                    .setPlaceholder('Escribe el texto que procesará el sistema...');
-
-                const filaAccion = new ActionRowBuilder().addComponents(mensajeInput);
-                modal.addComponents(filaAccion);
-
-                await interaction.showModal(modal);
-            } catch (err) {
-                console.error('Error mostrando el modal:', err);
-            }
+            const modal = new ModalBuilder().setCustomId('formulario_anonimo').setTitle('Usuario de la web');
+            const mensajeInput = new TextInputBuilder()
+                .setCustomId('contenido_anonimo')
+                .setLabel('Escribe tu mensaje secreto aquí')
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(true);
+            modal.addComponents(new ActionRowBuilder().addComponents(mensajeInput));
+            await interaction.showModal(modal);
         }
     }
 
-    // B. RESPUESTA AL FORMULARIO (MODAL)
-    if (interaction.isModalSubmit()) {
-        if (interaction.customId === 'formulario_anonimo') {
-            try {
-                const textoMensaje = interaction.fields.getTextInputValue('contenido_anonimo');
-
-                // 1. Enviar el embed público estilo Odyssey
-                const embedOdysseyStyle = new EmbedBuilder()
-                    .setAuthor({ name: 'Usuario de la web' })
-                    .setTitle('Mensaje con autor anónimo')
-                    .setDescription(textoMensaje)
-                    .setColor('#111111') 
-                    .setThumbnail('https://cdn-icons-png.flaticon.com/512/1534/1534082.png') 
-                    .setFooter({ text: 'MetroBot For Roleplay' })
-                    .setTimestamp();
-
-                await interaction.channel.send({ embeds: [embedOdysseyStyle] });
-                
-                // Confirmación efímera al usuario de inmediato
-                await interaction.reply({ content: '🤫 Tu mensaje ha sido enviado de forma anónima.', ephemeral: true });
-
-                // 2. Enviar Log al Staff de manera segura
-                const ID_CANAL_LOGS_STAFF = '1510148501860778075'; 
-                const canalStaff = interaction.guild.channels.cache.get(ID_CANAL_LOGS_STAFF);
-                
-                if (canalStaff) {
-                    const embedLogs = new EmbedBuilder()
-                        .setTitle('🚨 ALERTA DE MENSAJE ANÓNIMO')
-                        .setDescription('El sistema detectó un nuevo mensaje enviado a través de `/anonimo`.')
-                        .setColor('#e67e22')
-                        .addFields(
-                            { name: '👤 AUTOR REAL', value: `${interaction.user.tag} (<@${interaction.user.id}>)` },
-                            { name: '🆔 ID DEL USUARIO', value: interaction.user.id },
-                            { name: '📍 CANAL DONDE SE USÓ', value: `<#${interaction.channel.id}>` },
-                            { name: '📝 MENSAJE ENVIADO', value: textoMensaje }
-                        )
-                        .setTimestamp();
-
-                    await canalStaff.send({ embeds: [embedLogs] });
-                }
-
-            } catch (err) {
-                console.error('Error procesando el modal o enviando logs:', err);
-            }
-        }
+    if (interaction.isModalSubmit() && interaction.customId === 'formulario_anonimo') {
+        const textoMensaje = interaction.fields.getTextInputValue('contenido_anonimo');
+        const embedOdyssey = new EmbedBuilder()
+            .setAuthor({ name: 'Usuario de la web' })
+            .setTitle('Mensaje anónimo')
+            .setDescription(textoMensaje)
+            .setColor('#111111')
+            .setTimestamp();
+        await interaction.channel.send({ embeds: [embedOdyssey] });
+        await interaction.reply({ content: '🤫 Tu mensaje ha sido enviado.', ephemeral: true });
     }
 });
 
