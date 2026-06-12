@@ -60,7 +60,11 @@ const commands = [
 
     new SlashCommandBuilder()
         .setName('codigo-servidor')
-        .setDescription('Obtén el código oficial del servidor LArpsp')
+        .setDescription('Obtén el código oficial del servidor LArpsp'),
+
+    new SlashCommandBuilder()
+        .setName('comandos-metro')
+        .setDescription('Muestra la lista de comandos disponibles de MetroBot')
 ].map(command => command.toJSON());
 
 // 2. CONEXIÓN DEL BOT
@@ -79,7 +83,22 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.isChatInputCommand()) {
         
-        // COMANDO: /codigo-servidor (AHORA PÚBLICO)
+        // COMANDO: /comandos-metro (SIN MOSTRAR /decir)
+        if (interaction.commandName === 'comandos-metro') {
+            const embedComandos = new EmbedBuilder()
+                .setTitle('SISTEMA DE COMANDOS — METROBOT')
+                .setDescription('Lista de comandos disponibles para la comunidad:')
+                .setColor('#2c3e50')
+                .addFields(
+                    { name: '/entorno', value: 'Notifica situaciones de rol (descripción y ubicación).' },
+                    { name: '/registrar-vehiculo', value: 'Da de alta un vehículo en la base de datos oficial.' },
+                    { name: '/codigo-servidor', value: 'Muestra el código de acceso oficial (LArpsp).' },
+                    { name: '/anonimo', value: 'Despliega un formulario para enviar comunicados reservados.' }
+                );
+            return await interaction.reply({ embeds: [embedComandos], ephemeral: true });
+        }
+
+        // COMANDO: /codigo-servidor
         if (interaction.commandName === 'codigo-servidor') {
             return await interaction.reply({ 
                 content: '🌴 **Información de Conexión**\n\nEl código oficial para ingresar a **Los Angeles Roleplay Spanish** es:\n\n🔑 `LArpsp`\n\n¡Úsalo con cuidado en la ciudad! 🏙️'
