@@ -110,23 +110,23 @@ client.on('interactionCreate', async interaction => {
             });
         }
 
-        // COMANDO: /limpiar-chat (RESTRINGIDO A TU ID)
+        // COMANDO: /limpiar-chat (AHORA PÚBLICO PARA TODOS EN EL CANAL)
         if (interaction.commandName === 'limpiar-chat') {
             if (interaction.user.id !== MI_ID_DE_USUARIO) {
                 return await interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
             }
 
-            await interaction.reply({ content: '🧹 Iniciando limpieza del canal...', ephemeral: true });
+            await interaction.reply({ content: '🧹 Iniciando limpieza del canal...' });
             
             try {
                 // Obtiene los últimos 100 mensajes del canal actual
                 const mensajes = await interaction.channel.messages.fetch({ limit: 100 });
                 // Elimina los mensajes
                 await interaction.channel.bulkDelete(mensajes, true);
-                await interaction.followUp({ content: '✅ Canal limpiado correctamente.', ephemeral: true });
+                await interaction.followUp({ content: '✅ Canal limpiado correctamente.' });
             } catch (error) {
                 console.error('Error al limpiar el chat:', error);
-                await interaction.followUp({ content: '❌ Ocurrió un error al intentar limpiar el canal (recuerda que Discord no permite borrar mensajes de más de 14 días de antigüedad).', ephemeral: true });
+                await interaction.followUp({ content: '❌ Ocurrió un error al intentar limpiar el canal (recuerda que Discord no permite borrar mensajes de más de 14 días de antigüedad).' });
             }
             return;
         }
