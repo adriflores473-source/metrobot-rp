@@ -19,7 +19,8 @@ const {
 
 const client = new Client({ 
     intents: [
-        GatewayIntentBits.Guilds
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages // Necesario para poder gestionar/borrar mensajes
     ] 
 });
 
@@ -64,7 +65,11 @@ const commands = [
 
     new SlashCommandBuilder()
         .setName('comandos-metro')
-        .setDescription('Muestra la lista de comandos disponibles de MetroBot')
+        .setDescription('Muestra la lista de comandos disponibles de MetroBot'),
+
+    new SlashCommandBuilder()
+        .setName('limpiar-chat')
+        .setDescription('Elimina los mensajes masivos del canal actual.')
 ].map(command => command.toJSON());
 
 // 2. CONEXIÓN DEL BOT
@@ -83,7 +88,7 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.isChatInputCommand()) {
         
-        // COMANDO: /comandos-metro (AHORA PÚBLICO)
+        // COMANDO: /comandos-metro (PÚBLICO)
         if (interaction.commandName === 'comandos-metro') {
             const embedComandos = new EmbedBuilder()
                 .setTitle('SISTEMA DE COMANDOS — METROBOT')
@@ -105,77 +110,30 @@ client.on('interactionCreate', async interaction => {
             });
         }
 
+        // COMANDO: /limpiar-chat (RESTRINGIDO A TU ID)
+        if (interaction.commandName === 'limpiar-chat') {
+            if (interaction.user.id !== MI_ID_DE_USUARIO) {
+                return await interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
+            }
+
+            await interaction.reply({ content: '🧹 Iniciando limpieza del canal...', ephemeral: true });
+            
+            try {
+                // Obtiene los últimos 100 mensajes del canal actual
+                const mensajes = await interaction.channel.messages.fetch({ limit: 100 });
+                // Elimina los mensajes
+                await interaction.channel.bulkDelete(mensajes, true);
+                await interaction.followUp({ content: '✅ Canal limpiado correctamente.', ephemeral: true });
+            } catch (error) {
+                console.error('Error al limpiar el chat:', error);
+                await interaction.followUp({ content: '❌ Ocurrió un error al intentar limpiar el canal (recuerda que Discord no permite borrar mensajes de más de 14 días de antigüedad).', ephemeral: true });
+            }
+            return;
+        }
+
         if (interaction.commandName === 'entorno') {
             const desc = interaction.options.getString('descripcion');
             const ubi = interaction.options.getString('ubicacion');
             const embed = new EmbedBuilder()
                 .setTitle('REPORTE DE ENTORNO')
-                .setDescription('DEPARTAMENTO DE SEGURIDAD')
-                .setColor('#7289da')
-                .addFields(
-                    { name: 'DESCRIPCION', value: desc },
-                    { name: 'UBICACION', value: ubi }
-                );
-            return await interaction.reply({ content: '@everyone', embeds: [embed] });
-        }
-
-        if (interaction.commandName === 'registrar-vehiculo') {
-            const modelo = interaction.options.getString('modelo').toUpperCase();
-            const matricula = interaction.options.getString('matricula').toUpperCase().trim();
-            const color = interaction.options.getString('color').toUpperCase();
-            const propietario = interaction.options.getString('propietario').toUpperCase();
-            const dni = interaction.options.getString('dni');
-            const embed = new EmbedBuilder()
-                .setTitle('DEPARTAMENTO DE VEHICULOS MOTORIZADOS')
-                .setDescription('REGISTRO OFICIAL DE VEHICULOS')
-                .setColor('#34495e')
-                .addFields(
-                    { name: 'MODELO DEL VEHICULO', value: modelo },
-                    { name: 'COLOR', value: color },
-                    { name: 'MATRICULA / PLACA', value: `[${matricula}]` },
-                    { name: 'NOMBRE DEL PROPIETARIO', value: propietario },
-                    { name: 'NUMERO DE IDENTIFICACION (DNI)', value: `[${dni}]` },
-                    { name: 'ESTADO DEL REGISTRO', value: 'VALIDO / REGISTRADO' }
-                );
-            return await interaction.reply({ embeds: [embed] });
-        }
-
-        if (interaction.commandName === 'decir') {
-            if (interaction.user.id !== MI_ID_DE_USUARIO) {
-                return await interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
-            }
-            const mensajeTexto = interaction.options.getString('mensaje');
-            const embedAnuncio = new EmbedBuilder()
-                .setTitle('ANUNCIO DE LA ADMINISTRACION')
-                .setDescription(mensajeTexto)
-                .setColor('#2c3e50');
-            await interaction.channel.send({ embeds: [embedAnuncio] });
-            return await interaction.reply({ content: 'Enviado.', ephemeral: true });
-        }
-
-        if (interaction.commandName === 'anonimo') {
-            const modal = new ModalBuilder().setCustomId('formulario_anonimo').setTitle('Usuario de la web');
-            const mensajeInput = new TextInputBuilder()
-                .setCustomId('contenido_anonimo')
-                .setLabel('Escribe tu mensaje secreto aquí')
-                .setStyle(TextInputStyle.Paragraph)
-                .setRequired(true);
-            modal.addComponents(new ActionRowBuilder().addComponents(mensajeInput));
-            await interaction.showModal(modal);
-        }
-    }
-
-    if (interaction.isModalSubmit() && interaction.customId === 'formulario_anonimo') {
-        const textoMensaje = interaction.fields.getTextInputValue('contenido_anonimo');
-        const embedOdyssey = new EmbedBuilder()
-            .setAuthor({ name: 'Usuario de la web' })
-            .setTitle('Mensaje anónimo')
-            .setDescription(textoMensaje)
-            .setColor('#111111')
-            .setTimestamp();
-        await interaction.channel.send({ embeds: [embedOdyssey] });
-        await interaction.reply({ content: '🤫 Tu mensaje ha sido enviado.', ephemeral: true });
-    }
-});
-
-client.login(process.env.DISCORD_TOKEN);
+                .
