@@ -20,26 +20,24 @@ const {
 const client = new Client({ 
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages 
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMembers 
     ] 
 });
+
+// --- IDs CONFIGURADOS ---
+const ROL_BUSQUEDA_ID = '1516949215249563729';
+const ROLS_POLICIA = ['1510356154465779936', '1510145980983545898'];
+const CANAL_AGREGAR_ID = '1516948442080084031';
+const CANAL_RETIRAR_ID = '1516948968414904451';
 
 // 1. REGISTRO DE COMANDOS
 const commands = [
     new SlashCommandBuilder()
         .setName('entorno')
         .setDescription('Describe una situación de entorno para el rol.')
-        .addStringOption(option =>
-            option.setName('descripcion')
-                .setDescription('¿Qué está pasando a tu alrededor?')
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option.setName('ubicacion')
-                .setDescription('¿En qué parte de la ciudad estás?')
-                .setRequired(true)
-        ),
-
+        .addStringOption(option => option.setName('descripcion').setDescription('¿Qué está pasando a tu alrededor?').setRequired(true))
+        .addStringOption(option => option.setName('ubicacion').setDescription('¿En qué parte de la ciudad estás?').setRequired(true)),
     new SlashCommandBuilder()
         .setName('registrar-vehiculo')
         .setDescription('Registra un vehículo en la base de datos de la ciudad.')
@@ -48,28 +46,18 @@ const commands = [
         .addStringOption(option => option.setName('color').setDescription('Color').setRequired(true))
         .addStringOption(option => option.setName('propietario').setDescription('Nombre y Apellido').setRequired(true))
         .addStringOption(option => option.setName('dni').setDescription('Número de DNI').setRequired(true)),
-
     new SlashCommandBuilder()
         .setName('decir')
         .setDescription('Envía un comunicado oficial.')
         .addStringOption(option => option.setName('mensaje').setDescription('Texto a enviar').setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
-
-    new SlashCommandBuilder()
-        .setName('anonimo')
-        .setDescription('Envía un mensaje anónimo con estilo Odyssey Bot.'),
-
-    new SlashCommandBuilder()
-        .setName('codigo-servidor')
-        .setDescription('Obtén el código oficial del servidor LArpsp'),
-
-    new SlashCommandBuilder()
-        .setName('comandos-metro')
-        .setDescription('Muestra la lista de comandos disponibles de MetroBot'),
-
-    new SlashCommandBuilder()
-        .setName('limpiar-chat')
-        .setDescription('Elimina los mensajes masivos del canal actual.')
+    new SlashCommandBuilder().setName('anonimo').setDescription('Envía un mensaje anónimo con estilo Odyssey Bot.'),
+    new SlashCommandBuilder().setName('codigo-servidor').setDescription('Obtén el código oficial del servidor LArpsp'),
+    new SlashCommandBuilder().setName('comandos-metro').setDescription('Muestra la lista de comandos disponibles de MetroBot'),
+    new SlashCommandBuilder().setName('limpiar-chat').setDescription('Elimina los mensajes masivos del canal actual.'),
+    // COMANDOS NUEVOS
+    new SlashCommandBuilder().setName('agregar-busqueda').setDescription('Inicia busqueda').addUserOption(o => o.setName('usuario').setRequired(true)),
+    new SlashCommandBuilder().setName('retirar-busqueda').setDescription('Retira busqueda').addUserOption(o => o.setName('usuario').setRequired(true))
 ].map(command => command.toJSON());
 
 // 2. CONEXIÓN DEL BOT
@@ -85,6 +73,7 @@ client.once('ready', async () => {
 // 3. RESPUESTAS A INTERACCIONES
 client.on('interactionCreate', async interaction => {
     const MI_ID_DE_USUARIO = '1286812839465717772';
+    const esPolicia = interaction.member?.roles.cache.some(r => ROLS_POLICIA.includes(r.id));
 
     if (interaction.isChatInputCommand()) {
         
@@ -103,40 +92,25 @@ client.on('interactionCreate', async interaction => {
         }
 
         if (interaction.commandName === 'codigo-servidor') {
-            return await interaction.reply({ 
-                content: '🌴 **Información de Conexión**\n\nEl código oficial para ingresar a **Los Angeles Roleplay Spanish** es:\n\n🔑 `LArpsp`\n\n¡Úsalo con cuidado en la ciudad! 🏙️'
-            });
+            return await interaction.reply({ content: '🌴 **Información de Conexión**\n\nEl código oficial para ingresar a **Los Angeles Roleplay Spanish** es:\n\n🔑 `LArpsp`\n\n¡Úsalo con cuidado en la ciudad! 🏙️' });
         }
 
         if (interaction.commandName === 'limpiar-chat') {
-            if (interaction.user.id !== MI_ID_DE_USUARIO) {
-                return await interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
-            }
-
+            if (interaction.user.id !== MI_ID_DE_USUARIO) return await interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
             await interaction.reply({ content: '🧹 Iniciando limpieza del canal...' });
-            
             try {
                 const mensajes = await interaction.channel.messages.fetch({ limit: 100 });
                 await interaction.channel.bulkDelete(mensajes, true);
                 await interaction.followUp({ content: '✅ Canal limpiado correctamente.' });
-            } catch (error) {
-                console.error('Error al limpiar el chat:', error);
-                await interaction.followUp({ content: '❌ Ocurrió un error al intentar limpiar el canal.' });
-            }
+            } catch (error) { await interaction.followUp({ content: '❌ Error al intentar limpiar el canal.' }); }
             return;
         }
 
         if (interaction.commandName === 'entorno') {
             const desc = interaction.options.getString('descripcion');
             const ubi = interaction.options.getString('ubicacion');
-            const embed = new EmbedBuilder()
-                .setTitle('REPORTE DE ENTORNO')
-                .setDescription('DEPARTAMENTO DE SEGURIDAD')
-                .setColor('#7289da')
-                .addFields(
-                    { name: 'DESCRIPCION', value: desc },
-                    { name: 'UBICACION', value: ubi }
-                );
+            const embed = new EmbedBuilder().setTitle('REPORTE DE ENTORNO').setDescription('DEPARTAMENTO DE SEGURIDAD').setColor('#7289da')
+                .addFields({ name: 'DESCRIPCION', value: desc }, { name: 'UBICACION', value: ubi });
             return await interaction.reply({ content: '@everyone', embeds: [embed] });
         }
 
@@ -146,43 +120,38 @@ client.on('interactionCreate', async interaction => {
             const color = interaction.options.getString('color').toUpperCase();
             const propietario = interaction.options.getString('propietario').toUpperCase();
             const dni = interaction.options.getString('dni');
-            const embed = new EmbedBuilder()
-                .setTitle('DEPARTAMENTO DE VEHICULOS MOTORIZADOS')
-                .setDescription('REGISTRO OFICIAL DE VEHICULOS')
-                .setColor('#34495e')
-                .addFields(
-                    { name: 'MODELO DEL VEHICULO', value: modelo },
-                    { name: 'COLOR', value: color },
-                    { name: 'MATRICULA / PLACA', value: `[${matricula}]` },
-                    { name: 'NOMBRE DEL PROPIETARIO', value: propietario },
-                    { name: 'NUMERO DE IDENTIFICACION (DNI)', value: `[${dni}]` },
-                    { name: 'ESTADO DEL REGISTRO', value: 'VALIDO / REGISTRADO' }
-                );
+            const embed = new EmbedBuilder().setTitle('DEPARTAMENTO DE VEHICULOS MOTORIZADOS').setDescription('REGISTRO OFICIAL DE VEHICULOS').setColor('#34495e')
+                .addFields({ name: 'MODELO DEL VEHICULO', value: modelo }, { name: 'COLOR', value: color }, { name: 'MATRICULA / PLACA', value: `[${matricula}]` }, { name: 'NOMBRE DEL PROPIETARIO', value: propietario }, { name: 'NUMERO DE IDENTIFICACION (DNI)', value: `[${dni}]` }, { name: 'ESTADO DEL REGISTRO', value: 'VALIDO / REGISTRADO' });
             return await interaction.reply({ embeds: [embed] });
         }
 
         if (interaction.commandName === 'decir') {
-            if (interaction.user.id !== MI_ID_DE_USUARIO) {
-                return await interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
-            }
+            if (interaction.user.id !== MI_ID_DE_USUARIO) return await interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
             const mensajeTexto = interaction.options.getString('mensaje');
-            const embedAnuncio = new EmbedBuilder()
-                .setTitle('ANUNCIO DE LA ADMINISTRACION')
-                .setDescription(mensajeTexto)
-                .setColor('#2c3e50');
+            const embedAnuncio = new EmbedBuilder().setTitle('ANUNCIO DE LA ADMINISTRACION').setDescription(mensajeTexto).setColor('#2c3e50');
             await interaction.channel.send({ embeds: [embedAnuncio] });
             return await interaction.reply({ content: 'Enviado.', ephemeral: true });
         }
 
         if (interaction.commandName === 'anonimo') {
             const modal = new ModalBuilder().setCustomId('formulario_anonimo').setTitle('Usuario de la web');
-            const mensajeInput = new TextInputBuilder()
-                .setCustomId('contenido_anonimo')
-                .setLabel('Escribe tu mensaje secreto aquí')
-                .setStyle(TextInputStyle.Paragraph)
-                .setRequired(true);
+            const mensajeInput = new TextInputBuilder().setCustomId('contenido_anonimo').setLabel('Escribe tu mensaje secreto aquí').setStyle(TextInputStyle.Paragraph).setRequired(true);
             modal.addComponents(new ActionRowBuilder().addComponents(mensajeInput));
             await interaction.showModal(modal);
+        }
+
+        // --- COMANDOS NUEVOS ---
+        if (interaction.commandName === 'agregar-busqueda') {
+            if (interaction.channelId !== CANAL_AGREGAR_ID) return interaction.reply({ content: '❌ Usa el canal correcto.', ephemeral: true });
+            if (!esPolicia) return interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
+            const u = interaction.options.getMember('usuario');
+            try { await u.roles.add(ROL_BUSQUEDA_ID); await interaction.reply(`🚨 **${u.user.username}** ha sido puesto en búsqueda.`); } catch(e) { await interaction.reply({content:'Error.', ephemeral:true}); }
+        }
+        if (interaction.commandName === 'retirar-busqueda') {
+            if (interaction.channelId !== CANAL_RETIRAR_ID) return interaction.reply({ content: '❌ Usa el canal correcto.', ephemeral: true });
+            if (!esPolicia) return interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
+            const u = interaction.options.getMember('usuario');
+            try { await u.roles.remove(ROL_BUSQUEDA_ID); await interaction.reply(`✅ Se ha retirado la búsqueda a **${u.user.username}**.`); } catch(e) { await interaction.reply({content:'Error.', ephemeral:true}); }
         }
     }
 
