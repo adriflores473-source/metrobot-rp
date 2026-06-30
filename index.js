@@ -116,9 +116,10 @@ client.on('interactionCreate', async interaction => {
             if (interaction.channelId !== CANAL_ACTIVITY_CHECK) return interaction.reply({ content: `❌ Usa el canal <#${CANAL_ACTIVITY_CHECK}>`, ephemeral: true });
             if (!interaction.member.roles.cache.has(ROL_AUTORIZADO_ACTIVITY) && interaction.user.id !== MI_ID_DE_USUARIO) return interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
             
-            const mensaje = "📢 ACTIVITY CHECK\n¡Hola a todos!\nEstamos realizando un Activity Check para saber qué miembros siguen activos en la comunidad.\n✅ Para confirmar que continúas activo, reacciona a este mensaje con ✅.\n⏰ Tiempo límite: 24 horas.\nLos usuarios que no respondan podrán perder algunos beneficios, roles o ser considerados inactivos dentro del servidor.\n¡Gracias por formar parte de nuestra comunidad! 💙";
+            const mensaje = "|| @everyone || 📢 ACTIVITY CHECK\n¡Hola a todos!\nEstamos realizando un Activity Check para saber qué miembros siguen activos en la comunidad.\n✅ Para confirmar que continúas activo, reacciona a este mensaje con ✅.\n⏰ Tiempo límite: 24 horas.\nLos usuarios que no respondan podrán perder algunos beneficios, roles o ser considerados inactivos dentro del servidor.\n¡Gracias por formar parte de nuestra comunidad! 💙";
             
-            const msg = await interaction.reply({ content: mensaje, fetchReply: true });
+            await interaction.reply({ content: '✅ Activity Check iniciado.', ephemeral: true });
+            const msg = await interaction.channel.send({ content: mensaje });
             await msg.react('✅');
         }
 
