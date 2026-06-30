@@ -30,7 +30,7 @@ const ROL_BUSQUEDA_ID = '1516949215249563729';
 const ROLS_POLICIA = ['1510356154465779936', '1510145980983545898'];
 const CANAL_AGREGAR_ID = '1516948442080084031';
 const CANAL_RETIRAR_ID = '1516948968414904451';
-const CANAL_ACTIVITY_CHECK = '1521363660168233010'; // ID agregado
+const CANAL_ACTIVITY_CHECK = '1521363660168233010';
 
 // 1. REGISTRO DE COMANDOS
 const commands = [
@@ -89,7 +89,6 @@ const commands = [
         .setDescription('Retira orden de búsqueda (Solo Policía)')
         .addUserOption(option => option.setName('usuario').setDescription('El usuario a quitar').setRequired(true)),
     
-    // COMANDO AGREGADO
     new SlashCommandBuilder()
         .setName('activity-check')
         .setDescription('Inicia una encuesta de actividad para el servidor.')
@@ -113,12 +112,12 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.isChatInputCommand()) {
         
-        // LÓGICA AGREGADA
         if (interaction.commandName === 'activity-check') {
             if (interaction.channelId !== CANAL_ACTIVITY_CHECK) return interaction.reply({ content: `❌ Usa el canal <#${CANAL_ACTIVITY_CHECK}>`, ephemeral: true });
             if (!interaction.member.roles.cache.has(ROL_AUTORIZADO_ACTIVITY) && interaction.user.id !== MI_ID_DE_USUARIO) return interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
             
-            const mensaje = "Activity Check || @everyone || ¿En qué consiste el Activity Check? El activity check es una encuesta para registrar y ver nuestra actividad en el servidor, esto nos ayuda mucho a organizar y a ver qué cambios hacer en el servidor. Reacciones ✅";
+            const mensaje = "📢 ACTIVITY CHECK\n¡Hola a todos!\nEstamos realizando un Activity Check para saber qué miembros siguen activos en la comunidad.\n✅ Para confirmar que continúas activo, reacciona a este mensaje con ✅.\n⏰ Tiempo límite: 24 horas.\nLos usuarios que no respondan podrán perder algunos beneficios, roles o ser considerados inactivos dentro del servidor.\n¡Gracias por formar parte de nuestra comunidad! 💙";
+            
             const msg = await interaction.reply({ content: mensaje, fetchReply: true });
             await msg.react('✅');
         }
