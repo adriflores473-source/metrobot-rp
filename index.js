@@ -33,61 +33,16 @@ const CANAL_RETIRAR_ID = '1516948968414904451';
 
 // 1. REGISTRO DE COMANDOS
 const commands = [
-    new SlashCommandBuilder()
-        .setName('entorno')
-        .setDescription('Describe una situación de entorno para el rol.')
-        .addStringOption(option =>
-            option.setName('descripcion')
-                .setDescription('¿Qué está pasando a tu alrededor?')
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option.setName('ubicacion')
-                .setDescription('¿En qué parte de la ciudad estás?')
-                .setRequired(true)
-        ),
-
-    new SlashCommandBuilder()
-        .setName('registrar-vehiculo')
-        .setDescription('Registra un vehículo en la base de datos de la ciudad.')
-        .addStringOption(option => option.setName('modelo').setDescription('Marca y modelo').setRequired(true))
-        .addStringOption(option => option.setName('matricula').setDescription('La placa').setRequired(true))
-        .addStringOption(option => option.setName('color').setDescription('Color').setRequired(true))
-        .addStringOption(option => option.setName('propietario').setDescription('Nombre y Apellido').setRequired(true))
-        .addStringOption(option => option.setName('dni').setDescription('Número de DNI').setRequired(true)),
-
-    new SlashCommandBuilder()
-        .setName('decir')
-        .setDescription('Envía un comunicado oficial.')
-        .addStringOption(option => option.setName('mensaje').setDescription('Texto a enviar').setRequired(true))
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
-
-    new SlashCommandBuilder()
-        .setName('anonimo')
-        .setDescription('Envía un mensaje anónimo con estilo Odyssey Bot.'),
-
-    new SlashCommandBuilder()
-        .setName('codigo-servidor')
-        .setDescription('Obtén el código oficial del servidor LArpsp'),
-
-    new SlashCommandBuilder()
-        .setName('comandos-metro')
-        .setDescription('Muestra la lista de comandos disponibles de MetroBot'),
-
-    new SlashCommandBuilder()
-        .setName('limpiar-chat')
-        .setDescription('Elimina los mensajes masivos del canal actual.'),
-        
-    // NUEVOS COMANDOS AÑADIDOS
-    new SlashCommandBuilder()
-        .setName('agregar-busqueda')
-        .setDescription('Inicia orden de búsqueda (Solo Policía)')
-        .addUserOption(option => option.setName('usuario').setDescription('El usuario a buscar').setRequired(true)),
-
-    new SlashCommandBuilder()
-        .setName('retirar-busqueda')
-        .setDescription('Retira orden de búsqueda (Solo Policía)')
-        .addUserOption(option => option.setName('usuario').setDescription('El usuario a quitar').setRequired(true))
+    new SlashCommandBuilder().setName('entorno').setDescription('Describe una situación de entorno para el rol.').addStringOption(option => option.setName('descripcion').setDescription('¿Qué está pasando a tu alrededor?').setRequired(true)).addStringOption(option => option.setName('ubicacion').setDescription('¿En qué parte de la ciudad estás?').setRequired(true)),
+    new SlashCommandBuilder().setName('registrar-vehiculo').setDescription('Registra un vehículo en la base de datos de la ciudad.').addStringOption(option => option.setName('modelo').setDescription('Marca y modelo').setRequired(true)).addStringOption(option => option.setName('matricula').setDescription('La placa').setRequired(true)).addStringOption(option => option.setName('color').setDescription('Color').setRequired(true)).addStringOption(option => option.setName('propietario').setDescription('Nombre y Apellido').setRequired(true)).addStringOption(option => option.setName('dni').setDescription('Número de DNI').setRequired(true)),
+    new SlashCommandBuilder().setName('decir').setDescription('Envía un comunicado oficial.').addStringOption(option => option.setName('mensaje').setDescription('Texto a enviar').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    new SlashCommandBuilder().setName('anonimo').setDescription('Envía un mensaje anónimo con estilo Odyssey Bot.'),
+    new SlashCommandBuilder().setName('codigo-servidor').setDescription('Obtén el código oficial del servidor LArpsp'),
+    new SlashCommandBuilder().setName('comandos-metro').setDescription('Muestra la lista de comandos disponibles de MetroBot'),
+    new SlashCommandBuilder().setName('limpiar-chat').setDescription('Elimina los mensajes masivos del canal actual.'),
+    new SlashCommandBuilder().setName('agregar-busqueda').setDescription('Inicia orden de búsqueda (Solo Policía)').addUserOption(option => option.setName('usuario').setDescription('El usuario a buscar').setRequired(true)),
+    new SlashCommandBuilder().setName('retirar-busqueda').setDescription('Retira orden de búsqueda (Solo Policía)').addUserOption(option => option.setName('usuario').setDescription('El usuario a quitar').setRequired(true)),
+    new SlashCommandBuilder().setName('activity-check').setDescription('Inicia una encuesta de actividad para el servidor.')
 ].map(command => command.toJSON());
 
 // 2. CONEXIÓN DEL BOT
@@ -103,10 +58,25 @@ client.once('ready', async () => {
 // 3. RESPUESTAS A INTERACCIONES
 client.on('interactionCreate', async interaction => {
     const MI_ID_DE_USUARIO = '1286812839465717772';
+    const ROL_AUTORIZADO_ACTIVITY = '1510142095262875768';
     const esPolicia = interaction.member?.roles.cache.some(r => ROLS_POLICIA.includes(r.id));
 
     if (interaction.isChatInputCommand()) {
         
+        if (interaction.commandName === 'activity-check') {
+            const tieneRol = interaction.member.roles.cache.has(ROL_AUTORIZADO_ACTIVITY);
+            const esOwner = interaction.user.id === MI_ID_DE_USUARIO;
+
+            if (!tieneRol && !esOwner) {
+                return await interaction.reply({ content: '❌ No tienes permisos para usar este comando.', ephemeral: true });
+            }
+
+            const mensaje = "Activity Check || @everyone || ¿En qué consiste el Activity Check? El activity check es una encuesta para registrar y ver nuestra actividad en el servidor, esto nos ayuda mucho a organizar y a ver qué cambios hacer en el servidor. Reacciones ✅";
+            
+            const msg = await interaction.reply({ content: mensaje, fetchReply: true });
+            await msg.react('✅');
+        }
+
         if (interaction.commandName === 'comandos-metro') {
             const embedComandos = new EmbedBuilder()
                 .setTitle('SISTEMA DE COMANDOS — METROBOT')
@@ -116,7 +86,8 @@ client.on('interactionCreate', async interaction => {
                     { name: '/entorno', value: 'Notifica situaciones de rol (descripción y ubicación).' },
                     { name: '/registrar-vehiculo', value: 'Da de alta un vehículo en la base de datos oficial.' },
                     { name: '/codigo-servidor', value: 'Muestra el código de acceso oficial (LArpsp).' },
-                    { name: '/anonimo', value: 'Despliega un formulario para enviar comunicados reservados.' }
+                    { name: '/anonimo', value: 'Despliega un formulario para enviar comunicados reservados.' },
+                    { name: '/activity-check', value: 'Inicia el registro de actividad del servidor.' }
                 );
             return await interaction.reply({ embeds: [embedComandos] });
         }
@@ -131,9 +102,7 @@ client.on('interactionCreate', async interaction => {
             if (interaction.user.id !== MI_ID_DE_USUARIO) {
                 return await interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
             }
-
             await interaction.reply({ content: '🧹 Iniciando limpieza del canal...' });
-            
             try {
                 const mensajes = await interaction.channel.messages.fetch({ limit: 100 });
                 await interaction.channel.bulkDelete(mensajes, true);
@@ -204,7 +173,6 @@ client.on('interactionCreate', async interaction => {
             await interaction.showModal(modal);
         }
 
-        // NUEVA LÓGICA DE BÚSQUEDA AÑADIDA AL FINAL
         if (interaction.commandName === 'agregar-busqueda') {
             if (interaction.channelId !== CANAL_AGREGAR_ID) return interaction.reply({ content: '❌ Usa el canal correcto.', ephemeral: true });
             if (!esPolicia) return interaction.reply({ content: '❌ Acceso denegado.', ephemeral: true });
